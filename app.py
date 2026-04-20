@@ -10,8 +10,8 @@ app = Flask(__name__)
 CORS(app)
 
 xai_client = OpenAI(
-    api_key=os.getenv("XAI_API_KEY"),
-    base_url="https://api.x.ai/v1"
+    api_key=os.getenv("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1"
 )
 
 @app.route('/')
@@ -66,7 +66,7 @@ def chat(id):
     messages = body.get("messages", [])
 
     response = xai_client.chat.completions.create(
-        model="grok-3-mini",
+        model="llama3-8b-8192",
         messages=[
             {"role": "system", "content": student["character"]},
             *messages
