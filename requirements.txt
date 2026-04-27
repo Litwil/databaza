@@ -3,4 +3,4 @@ flask-cors
 openai
 python-dotenv
 gunicorn
-pymysql
+psycopg2-binary
