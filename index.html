@@ -408,6 +408,51 @@
             align-self: center;
             display: none;
         }
+
+        .sort-bar {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .sort-bar.visible { display: flex; }
+
+        .sort-label {
+            font-size: 0.78rem;
+            color: #718096;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-right: 4px;
+        }
+
+        .sort-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid #2d3748;
+            background: transparent;
+            color: #a0aec0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .sort-btn:hover { border-color: #667eea; color: #e2e8f0; }
+
+        .sort-btn.active {
+            background: rgba(102, 126, 234, 0.15);
+            border-color: #667eea;
+            color: #a78bfa;
+        }
+
+        .sort-arrow { font-size: 0.7rem; }
     </style>
 </head>
 
@@ -419,6 +464,13 @@
 </header>
 
 <main>
+    <div class="sort-bar" id="sort-bar">
+        <span class="sort-label">Zoradiť:</span>
+        <button class="sort-btn" onclick="applySort('name')">Meno <span class="sort-arrow" id="arrow-name"></span></button>
+        <button class="sort-btn" onclick="applySort('surname')">Priezvisko <span class="sort-arrow" id="arrow-surname"></span></button>
+        <button class="sort-btn" onclick="applySort('age')">Vek <span class="sort-arrow" id="arrow-age"></span></button>
+        <button class="sort-btn" onclick="applySort('height')">Výška <span class="sort-arrow" id="arrow-height"></span></button>
+    </div>
     <div id="students" class="container"><p class="status">Klikni na tlačidlo pre načítanie študentov.</p></div>
 </main>
 
@@ -480,6 +532,76 @@
     let currentStudentId = null;
     let messageHistory = [];
     let editStudentData = null;
+    let allStudents = [];
+    let sortKey = null;
+    let sortAsc = true;
+
+    // --- Quicksort (no Array.sort) ---
+    function quickSort(arr, key, asc) {
+        if (arr.length <= 1) return arr;
+        const pivotIdx = Math.floor(arr.length / 2);
+        const pivot = arr[pivotIdx][key];
+        const left = [], middle = [], right = [];
+        for (let i = 0; i < arr.length; i++) {
+            const val = arr[i][key];
+            let cmp;
+            if (typeof val === "string") {
+                cmp = val.localeCompare(pivot, "sk");
+            } else {
+                cmp = val < pivot ? -1 : val > pivot ? 1 : 0;
+            }
+            if (cmp < 0) left.push(arr[i]);
+            else if (cmp > 0) right.push(arr[i]);
+            else middle.push(arr[i]);
+        }
+        const sorted = [...quickSort(left, key, asc), ...middle, ...quickSort(right, key, asc)];
+        if (!asc) sorted.reverse();
+        return sorted;
+    }
+
+    function applySort(key) {
+        if (sortKey === key) {
+            sortAsc = !sortAsc;
+        } else {
+            sortKey = key;
+            sortAsc = true;
+        }
+        document.querySelectorAll(".sort-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".sort-arrow").forEach(a => a.textContent = "");
+        const btn = document.querySelector(`[onclick="applySort('${key}')"]`);
+        if (btn) btn.classList.add("active");
+        const arrow = document.getElementById(`arrow-${key}`);
+        if (arrow) arrow.textContent = sortAsc ? "▲" : "▼";
+        renderStudents(quickSort(allStudents, key, sortAsc));
+    }
+
+    function renderStudents(students) {
+        const container = document.getElementById("students");
+        container.innerHTML = "";
+        students.forEach(student => {
+            const card = document.createElement("div");
+            card.className = "card";
+            card.id = `card-${student.id}`;
+
+            const nickname = student.nickname && student.nickname.trim()
+                ? `<span class="badge">${student.nickname}</span>`
+                : "";
+            const meta = `<span style="font-size:0.68rem;color:#718096">${student.age} r. · ${student.height} cm</span>`;
+
+            card.innerHTML = `
+                <button class="edit-btn" title="Upraviť" onclick="openEdit(event, ${student.id})">✎</button>
+                <img src="${student.image}" alt="${student.name}" onclick="openChatFromCard(${student.id})">
+                <div class="card-body" onclick="openChatFromCard(${student.id})">
+                    <h3>${student.name} ${student.surname}</h3>
+                    ${nickname}
+                    ${meta}
+                </div>
+            `;
+
+            card.dataset.student = JSON.stringify(student);
+            container.appendChild(card);
+        });
+    }
 
     async function loadStudents() {
         const container = document.getElementById("students");
@@ -488,31 +610,9 @@
         try {
             const response = await fetch(API_URL);
             const data = await response.json();
-
-            container.innerHTML = "";
-
-            data.students.forEach(student => {
-                const card = document.createElement("div");
-                card.className = "card";
-                card.id = `card-${student.id}`;
-
-                const nickname = student.nickname && student.nickname.trim()
-                    ? `<span class="badge">${student.nickname}</span>`
-                    : "";
-
-                card.innerHTML = `
-                    <button class="edit-btn" title="Upraviť" onclick="openEdit(event, ${student.id})">✎</button>
-                    <img src="${student.image}" alt="${student.name}" onclick="openChat(${JSON.stringify(JSON.stringify(student))})">
-                    <div class="card-body" onclick="openChatFromCard(${student.id})">
-                        <h3>${student.name} ${student.surname}</h3>
-                        ${nickname}
-                    </div>
-                `;
-
-                card.dataset.student = JSON.stringify(student);
-                container.appendChild(card);
-            });
-
+            allStudents = data.students;
+            document.getElementById("sort-bar").classList.add("visible");
+            renderStudents(allStudents);
         } catch (error) {
             container.innerHTML = "❌ Nepodarilo sa načítať dáta";
             console.error(error);
@@ -655,16 +755,20 @@
 
             const saved = await res.json();
 
-            // Update card in DOM
+            // Update card in DOM and allStudents array
+            const idx = allStudents.findIndex(s => s.id === editStudentData.id);
+            if (idx !== -1) allStudents[idx] = { ...allStudents[idx], ...saved };
             const card = document.getElementById(`card-${editStudentData.id}`);
             if (card) {
-                card.dataset.student = JSON.stringify(saved);
+                card.dataset.student = JSON.stringify(allStudents[idx]);
                 const nickname = saved.nickname && saved.nickname.trim()
                     ? `<span class="badge">${saved.nickname}</span>`
                     : "";
+                const meta = `<span style="font-size:0.68rem;color:#718096">${allStudents[idx].age} r. · ${allStudents[idx].height} cm</span>`;
                 card.querySelector(".card-body").innerHTML = `
                     <h3>${saved.name} ${saved.surname}</h3>
                     ${nickname}
+                    ${meta}
                 `;
             }
 
