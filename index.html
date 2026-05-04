@@ -79,7 +79,7 @@
             border-radius: 12px;
             overflow: hidden;
             transition: transform 0.2s, border-color 0.2s;
-            cursor: pointer;
+            position: relative;
         }
 
         .card:hover {
@@ -87,15 +87,21 @@
             border-color: #667eea;
         }
 
+        .card:hover .edit-btn {
+            opacity: 1;
+        }
+
         .card img {
             width: 100%;
             aspect-ratio: 1 / 1;
             object-fit: cover;
             display: block;
+            cursor: pointer;
         }
 
         .card-body {
             padding: 8px 10px 10px;
+            cursor: pointer;
         }
 
         .card-body h3 {
@@ -113,6 +119,32 @@
             border-radius: 20px;
             font-size: 0.68rem;
             font-weight: 500;
+        }
+
+        .edit-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            background: rgba(15, 17, 23, 0.85);
+            border: 1px solid #2d3748;
+            color: #a78bfa;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s, background 0.2s;
+            z-index: 1;
+        }
+
+        .edit-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
         }
 
         /* Modal overlay */
@@ -258,6 +290,124 @@
 
         .send-btn:hover { opacity: 0.9; }
         .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Edit modal */
+        .edit-modal {
+            background: #1a1d2e;
+            border: 1px solid #2d3748;
+            border-radius: 20px;
+            width: 480px;
+            max-width: 95vw;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .edit-modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #2d3748;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .edit-modal-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f7fafc;
+        }
+
+        .edit-modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            background: #0f1117;
+            border: 1px solid #2d3748;
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus { border-color: #667eea; }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .edit-modal-footer {
+            padding: 14px 20px;
+            border-top: 1px solid #2d3748;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .btn-cancel {
+            padding: 10px 18px;
+            background: transparent;
+            border: 1px solid #2d3748;
+            border-radius: 10px;
+            color: #718096;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .btn-cancel:hover { border-color: #718096; color: #e2e8f0; }
+
+        .btn-save {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-save:hover { opacity: 0.9; }
+        .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .save-feedback {
+            font-size: 0.8rem;
+            padding: 6px 0;
+            color: #68d391;
+            align-self: center;
+            display: none;
+        }
     </style>
 </head>
 
@@ -291,11 +441,45 @@
     </div>
 </div>
 
+<!-- Edit modal -->
+<div class="modal-overlay" id="edit-modal" onclick="closeEditOnOverlay(event)">
+    <div class="edit-modal">
+        <div class="edit-modal-header">
+            <h2>Upraviť študenta</h2>
+            <button class="chat-close" onclick="closeEdit()">✕</button>
+        </div>
+        <div class="edit-modal-body">
+            <div class="form-group">
+                <label>Meno</label>
+                <input type="text" id="edit-name" placeholder="Meno">
+            </div>
+            <div class="form-group">
+                <label>Priezvisko</label>
+                <input type="text" id="edit-surname" placeholder="Priezvisko">
+            </div>
+            <div class="form-group">
+                <label>Prezývka</label>
+                <input type="text" id="edit-nickname" placeholder="Prezývka (nepovinné)">
+            </div>
+            <div class="form-group">
+                <label>Charakter (AI prompt)</label>
+                <textarea id="edit-character" placeholder="Popis charakteru pre AI..."></textarea>
+            </div>
+        </div>
+        <div class="edit-modal-footer">
+            <span class="save-feedback" id="save-feedback">Uložené!</span>
+            <button class="btn-cancel" onclick="closeEdit()">Zrušiť</button>
+            <button class="btn-save" id="save-btn" onclick="saveStudent()">Uložiť</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const API_URL = "https://databaza.onrender.com/api";
 
     let currentStudentId = null;
     let messageHistory = [];
+    let editStudentData = null;
 
     async function loadStudents() {
         const container = document.getElementById("students");
@@ -308,23 +492,25 @@
             container.innerHTML = "";
 
             data.students.forEach(student => {
-                const div = document.createElement("div");
-                div.className = "card";
-                div.onclick = () => openChat(student);
+                const card = document.createElement("div");
+                card.className = "card";
+                card.id = `card-${student.id}`;
 
                 const nickname = student.nickname && student.nickname.trim()
                     ? `<span class="badge">${student.nickname}</span>`
                     : "";
 
-                div.innerHTML = `
-                    <img src="${student.image}" alt="${student.name}">
-                    <div class="card-body">
+                card.innerHTML = `
+                    <button class="edit-btn" title="Upraviť" onclick="openEdit(event, ${student.id})">✎</button>
+                    <img src="${student.image}" alt="${student.name}" onclick="openChat(${JSON.stringify(JSON.stringify(student))})">
+                    <div class="card-body" onclick="openChatFromCard(${student.id})">
                         <h3>${student.name} ${student.surname}</h3>
                         ${nickname}
                     </div>
                 `;
 
-                container.appendChild(div);
+                card.dataset.student = JSON.stringify(student);
+                container.appendChild(card);
             });
 
         } catch (error) {
@@ -333,7 +519,18 @@
         }
     }
 
+    function getStudentFromCard(id) {
+        const card = document.getElementById(`card-${id}`);
+        return card ? JSON.parse(card.dataset.student) : null;
+    }
+
+    function openChatFromCard(id) {
+        const student = getStudentFromCard(id);
+        if (student) openChat(student);
+    }
+
     function openChat(student) {
+        if (typeof student === 'string') student = JSON.parse(student);
         currentStudentId = student.id;
         messageHistory = [];
 
@@ -404,6 +601,82 @@
 
         sendBtn.disabled = false;
         input.focus();
+    }
+
+    /* ---- Edit functionality ---- */
+
+    function openEdit(event, id) {
+        event.stopPropagation();
+        const student = getStudentFromCard(id);
+        if (!student) return;
+
+        editStudentData = { ...student };
+
+        document.getElementById("edit-name").value = student.name;
+        document.getElementById("edit-surname").value = student.surname;
+        document.getElementById("edit-nickname").value = student.nickname || "";
+        document.getElementById("edit-character").value = student.character || "";
+        document.getElementById("save-feedback").style.display = "none";
+        document.getElementById("save-btn").disabled = false;
+        document.getElementById("edit-modal").classList.add("open");
+    }
+
+    function closeEdit() {
+        document.getElementById("edit-modal").classList.remove("open");
+        editStudentData = null;
+    }
+
+    function closeEditOnOverlay(e) {
+        if (e.target === document.getElementById("edit-modal")) closeEdit();
+    }
+
+    async function saveStudent() {
+        if (!editStudentData) return;
+
+        const saveBtn = document.getElementById("save-btn");
+        saveBtn.disabled = true;
+
+        const updated = {
+            name: document.getElementById("edit-name").value.trim(),
+            surname: document.getElementById("edit-surname").value.trim(),
+            nickname: document.getElementById("edit-nickname").value.trim(),
+            image: editStudentData.image,
+            character: document.getElementById("edit-character").value.trim(),
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/student/${editStudentData.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updated)
+            });
+
+            if (!res.ok) throw new Error("Server error");
+
+            const saved = await res.json();
+
+            // Update card in DOM
+            const card = document.getElementById(`card-${editStudentData.id}`);
+            if (card) {
+                card.dataset.student = JSON.stringify(saved);
+                const nickname = saved.nickname && saved.nickname.trim()
+                    ? `<span class="badge">${saved.nickname}</span>`
+                    : "";
+                card.querySelector(".card-body").innerHTML = `
+                    <h3>${saved.name} ${saved.surname}</h3>
+                    ${nickname}
+                `;
+            }
+
+            const feedback = document.getElementById("save-feedback");
+            feedback.style.display = "block";
+            setTimeout(() => closeEdit(), 1000);
+
+        } catch (err) {
+            console.error(err);
+            alert("❌ Nepodarilo sa uložiť zmeny");
+            saveBtn.disabled = false;
+        }
     }
 </script>
 
