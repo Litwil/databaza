@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Študenti</title>
+    <title>Students</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -459,19 +459,19 @@
 <body>
 
 <header>
-    <h1>Zoznam <span>študentov</span></h1>
-    <button class="load-btn" onclick="loadStudents()">Načítať študentov</button>
+    <h1>List of <span>students</span></h1>
+    <button class="load-btn" onclick="loadStudents()">Load students</button>
 </header>
 
 <main>
     <div class="sort-bar" id="sort-bar">
-        <span class="sort-label">Zoradiť:</span>
-        <button class="sort-btn" onclick="applySort('name')">Meno <span class="sort-arrow" id="arrow-name"></span></button>
-        <button class="sort-btn" onclick="applySort('surname')">Priezvisko <span class="sort-arrow" id="arrow-surname"></span></button>
-        <button class="sort-btn" onclick="applySort('age')">Vek <span class="sort-arrow" id="arrow-age"></span></button>
-        <button class="sort-btn" onclick="applySort('height')">Výška <span class="sort-arrow" id="arrow-height"></span></button>
+        <span class="sort-label">Sort by:</span>
+        <button class="sort-btn" onclick="applySort('name')">First name <span class="sort-arrow" id="arrow-name"></span></button>
+        <button class="sort-btn" onclick="applySort('surname')">Last name <span class="sort-arrow" id="arrow-surname"></span></button>
+        <button class="sort-btn" onclick="applySort('age')">Age <span class="sort-arrow" id="arrow-age"></span></button>
+        <button class="sort-btn" onclick="applySort('height')">Height <span class="sort-arrow" id="arrow-height"></span></button>
     </div>
-    <div id="students" class="container"><p class="status">Klikni na tlačidlo pre načítanie študentov.</p></div>
+    <div id="students" class="container"><p class="status">Click the button to load students.</p></div>
 </main>
 
 <!-- Chat modal -->
@@ -487,8 +487,8 @@
         </div>
         <div class="chat-messages" id="chat-messages"></div>
         <div class="chat-input-row">
-            <input class="chat-input" id="chat-input" type="text" placeholder="Napíš správu..." onkeydown="handleKey(event)">
-            <button class="send-btn" id="send-btn" onclick="sendMessage()">Odoslať</button>
+            <input class="chat-input" id="chat-input" type="text" placeholder="Type a message..." onkeydown="handleKey(event)">
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
         </div>
     </div>
 </div>
@@ -497,31 +497,31 @@
 <div class="modal-overlay" id="edit-modal" onclick="closeEditOnOverlay(event)">
     <div class="edit-modal">
         <div class="edit-modal-header">
-            <h2>Upraviť študenta</h2>
+            <h2>Edit student</h2>
             <button class="chat-close" onclick="closeEdit()">✕</button>
         </div>
         <div class="edit-modal-body">
             <div class="form-group">
-                <label>Meno</label>
-                <input type="text" id="edit-name" placeholder="Meno">
+                <label>First name</label>
+                <input type="text" id="edit-name" placeholder="First name">
             </div>
             <div class="form-group">
-                <label>Priezvisko</label>
-                <input type="text" id="edit-surname" placeholder="Priezvisko">
+                <label>Last name</label>
+                <input type="text" id="edit-surname" placeholder="Last name">
             </div>
             <div class="form-group">
-                <label>Prezývka</label>
-                <input type="text" id="edit-nickname" placeholder="Prezývka (nepovinné)">
+                <label>Nickname</label>
+                <input type="text" id="edit-nickname" placeholder="Nickname (optional)">
             </div>
             <div class="form-group">
-                <label>Charakter (AI prompt)</label>
-                <textarea id="edit-character" placeholder="Popis charakteru pre AI..."></textarea>
+                <label>Character (AI prompt)</label>
+                <textarea id="edit-character" placeholder="Character description for AI..."></textarea>
             </div>
         </div>
         <div class="edit-modal-footer">
-            <span class="save-feedback" id="save-feedback">Uložené!</span>
-            <button class="btn-cancel" onclick="closeEdit()">Zrušiť</button>
-            <button class="btn-save" id="save-btn" onclick="saveStudent()">Uložiť</button>
+            <span class="save-feedback" id="save-feedback">Saved!</span>
+            <button class="btn-cancel" onclick="closeEdit()">Cancel</button>
+            <button class="btn-save" id="save-btn" onclick="saveStudent()">Save</button>
         </div>
     </div>
 </div>
@@ -533,8 +533,18 @@
     let messageHistory = [];
     let editStudentData = null;
     let allStudents = [];
-    let sortKey = null;
-    let sortAsc = true;
+    let sortKey = getCookie("sortKey") || null;
+    let sortAsc = getCookie("sortAsc") !== "false";
+
+    // --- Cookies ---
+    function setCookie(name, value) {
+        document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 365}`;
+    }
+
+    function getCookie(name) {
+        const match = document.cookie.split("; ").find(c => c.startsWith(name + "="));
+        return match ? match.split("=")[1] : null;
+    }
 
     // --- Quicksort (no Array.sort) ---
     function quickSort(arr, key, asc) {
@@ -566,13 +576,20 @@
             sortKey = key;
             sortAsc = true;
         }
+        setCookie("sortKey", sortKey);
+        setCookie("sortAsc", sortAsc);
+        updateSortUI();
+        renderStudents(quickSort(allStudents, sortKey, sortAsc));
+    }
+
+    function updateSortUI() {
         document.querySelectorAll(".sort-btn").forEach(b => b.classList.remove("active"));
         document.querySelectorAll(".sort-arrow").forEach(a => a.textContent = "");
-        const btn = document.querySelector(`[onclick="applySort('${key}')"]`);
+        if (!sortKey) return;
+        const btn = document.querySelector(`[onclick="applySort('${sortKey}')"]`);
         if (btn) btn.classList.add("active");
-        const arrow = document.getElementById(`arrow-${key}`);
+        const arrow = document.getElementById(`arrow-${sortKey}`);
         if (arrow) arrow.textContent = sortAsc ? "▲" : "▼";
-        renderStudents(quickSort(allStudents, key, sortAsc));
     }
 
     function renderStudents(students) {
@@ -589,7 +606,7 @@
             const meta = `<span style="font-size:0.68rem;color:#718096">${student.age} r. · ${student.height} cm</span>`;
 
             card.innerHTML = `
-                <button class="edit-btn" title="Upraviť" onclick="openEdit(event, ${student.id})">✎</button>
+                <button class="edit-btn" title="Edit" onclick="openEdit(event, ${student.id})">✎</button>
                 <img src="${student.image}" alt="${student.name}" onclick="openChatFromCard(${student.id})">
                 <div class="card-body" onclick="openChatFromCard(${student.id})">
                     <h3>${student.name} ${student.surname}</h3>
@@ -605,16 +622,18 @@
 
     async function loadStudents() {
         const container = document.getElementById("students");
-        container.innerHTML = "Načítavam...";
+        container.innerHTML = "Loading...";
 
         try {
             const response = await fetch(API_URL);
             const data = await response.json();
             allStudents = data.students;
             document.getElementById("sort-bar").classList.add("visible");
-            renderStudents(allStudents);
+            updateSortUI();
+            const toRender = sortKey ? quickSort(allStudents, sortKey, sortAsc) : allStudents;
+            renderStudents(toRender);
         } catch (error) {
-            container.innerHTML = "❌ Nepodarilo sa načítať dáta";
+            container.innerHTML = "❌ Failed to load data";
             console.error(error);
         }
     }
@@ -679,7 +698,7 @@
         messageHistory.push({ role: "user", content: text });
 
         sendBtn.disabled = true;
-        const typingDiv = addMessage("bot typing", "píše...");
+        const typingDiv = addMessage("bot typing", "typing...");
 
         try {
             const res = await fetch(`${API_URL}/chat/${currentStudentId}`, {
@@ -778,7 +797,7 @@
 
         } catch (err) {
             console.error(err);
-            alert("❌ Nepodarilo sa uložiť zmeny");
+            alert("❌ Failed to save changes");
             saveBtn.disabled = false;
         }
     }
