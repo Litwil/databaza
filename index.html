@@ -453,6 +453,68 @@
         }
 
         .sort-arrow { font-size: 0.7rem; }
+
+        /* Cookie banner */
+        .cookie-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1d2e;
+            border-top: 1px solid #2d3748;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            z-index: 999;
+            flex-wrap: wrap;
+        }
+
+        .cookie-banner.hidden { display: none; }
+
+        .cookie-banner p {
+            font-size: 0.85rem;
+            color: #a0aec0;
+            margin: 0;
+        }
+
+        .cookie-banner p a {
+            color: #a78bfa;
+            text-decoration: underline;
+        }
+
+        .cookie-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+        .btn-decline {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid #2d3748;
+            background: transparent;
+            color: #718096;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-decline:hover { border-color: #718096; color: #e2e8f0; }
+
+        .btn-accept {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .btn-accept:hover { opacity: 0.9; }
     </style>
 </head>
 
@@ -473,6 +535,15 @@
     </div>
     <div id="students" class="container"><p class="status">Click the button to load students.</p></div>
 </main>
+
+<!-- Cookie banner -->
+<div class="cookie-banner" id="cookie-banner">
+    <p>🍪 We use cookies to remember your sort preference. By clicking <strong>Accept</strong>, you agree to our use of cookies.</p>
+    <div class="cookie-actions">
+        <button class="btn-decline" onclick="declineCookies()">Decline</button>
+        <button class="btn-accept" onclick="acceptCookies()">Accept</button>
+    </div>
+</div>
 
 <!-- Chat modal -->
 <div class="modal-overlay" id="modal" onclick="closeOnOverlay(event)">
@@ -538,12 +609,28 @@
 
     // --- Cookies ---
     function setCookie(name, value) {
+        if (getCookie("cookieConsent") !== "accepted") return;
         document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 365}`;
     }
 
     function getCookie(name) {
         const match = document.cookie.split("; ").find(c => c.startsWith(name + "="));
         return match ? match.split("=")[1] : null;
+    }
+
+    function acceptCookies() {
+        document.cookie = "cookieConsent=accepted;path=/;max-age=" + (60 * 60 * 24 * 365);
+        document.getElementById("cookie-banner").classList.add("hidden");
+    }
+
+    function declineCookies() {
+        document.cookie = "cookieConsent=declined;path=/;max-age=" + (60 * 60 * 24 * 365);
+        document.getElementById("cookie-banner").classList.add("hidden");
+    }
+
+    // Show banner only if user hasn't decided yet
+    if (getCookie("cookieConsent")) {
+        document.getElementById("cookie-banner").classList.add("hidden");
     }
 
     // --- Quicksort (no Array.sort) ---
